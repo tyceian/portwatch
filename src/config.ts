@@ -52,10 +52,14 @@ export function validateConfig(config: PortwatchConfig): string[] {
 
   if (!Array.isArray(config.ignorePorts)) {
     errors.push('ignorePorts must be an array');
+  } else if (config.ignorePorts.some((p) => !Number.isInteger(p) || p < 1 || p > 65535)) {
+    errors.push('ignorePorts contains invalid port numbers (must be integers 1-65535)');
   }
 
   if (!Array.isArray(config.watchPorts)) {
     errors.push('watchPorts must be an array');
+  } else if (config.watchPorts.some((p) => !Number.isInteger(p) || p < 1 || p > 65535)) {
+    errors.push('watchPorts contains invalid port numbers (must be integers 1-65535)');
   }
 
   return errors;
