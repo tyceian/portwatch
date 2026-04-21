@@ -38,6 +38,15 @@ describe('SnapshotManager', () => {
     expect(diff.closed).toHaveLength(0);
   });
 
+  it('should detect closed ports when a port is removed', () => {
+    const mgr = new SnapshotManager({ snapshotPath: tmpPath });
+    mgr.load();
+    mgr.update(ports2);
+    const diff = mgr.update(ports1);
+    expect(diff.closed).toContain(4000);
+    expect(diff.opened).toHaveLength(0);
+  });
+
   it('should persist snapshot between manager instances', () => {
     const mgr1 = new SnapshotManager({ snapshotPath: tmpPath });
     mgr1.load();
