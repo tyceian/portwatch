@@ -53,3 +53,19 @@ export function clearRateLimits(): void {
 export function getRateLimitStats(port: number, type: string): RateLimitEntry | undefined {
   return store.get(getRateLimitKey(port, type));
 }
+
+/**
+ * Removes all entries from the store whose time window has already expired.
+ * Useful for long-running processes to prevent unbounded memory growth.
+ */
+export function pruneExpiredEntries(config: RateLimitConfig = DEFAULT_CONFIG): number {
+  const now = Date.now();
+  let pruned = 0;
+  for (const [key, entry] of store.entries()) {
+    if (now - entry.firstSeen > config.windowMs) {
+      store.delete(key);
+      pruned++;
+    }
+  }
+  return pruned;
+}
