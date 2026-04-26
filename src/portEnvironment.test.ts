@@ -6,78 +6,102 @@ import {
   listEnvironments,
   getPortsForEnvironment,
   clearEnvironments,
-  isKnownEnvironment,
-  getRuleCount,
-} from './portEnvironment';
+  clearPortEnvironments,
+} from "./portEnvironment";
 
-beforeEach(() => clearEnvironments());
+beforeEach(() => {
+  clearEnvironments();
+});
 
-describe('setEnvironment', () => {
-  it('stores a rule and returns it', () => {
-    const rule = setEnvironment(3000, 'dev');
-    expect(rule.port).toBe(3000);
-    expect(rule.environment).toBe('dev');
-    expect(rule.addedAt).toBeLessThanOrEqual(Date.now());
+describe("setEnvironment", () => {
+  it("assigns an environment to a port", () => {
+    setEnvironment(3000, "development");
+    expect(getEnvironment(3000)).toBe("development");
   });
 
-  it('normalises environment to lowercase', () => {
-    const rule = setEnvironment(4000, 'PROD');
-    expect(rule.environment).toBe('prod');
+  it("overwrites an existing environment", () => {
+    setEnvironment(3000, "development");
+    setEnvironment(3000, "staging");
+    expect(getEnvironment(3000)).toBe("staging");
   });
 
-  it('overwrites existing rule for same port', () => {
-    setEnvironment(3000, 'dev');
-    setEnvironment(3000, 'staging');
-    expect(getEnvironment(3000)?.environment).toBe('staging');
-    expect(getRuleCount()).toBe(1);
+  it("handles multiple ports independently", () => {
+    setEnvironment(3000, "development");
+    setEnvironment(4000, "production");
+    expect(getEnvironment(3000)).toBe("development");
+    expect(getEnvironment(4000)).toBe("production");
   });
 });
 
-describe('removeEnvironment', () => {
-  it('removes an existing rule', () => {
-    setEnvironment(3000, 'dev');
-    expect(removeEnvironment(3000)).toBe(true);
+describe("removeEnvironment", () => {
+  it("removes an environment from a port", () => {
+    setEnvironment(3000, "development");
+    removeEnvironment(3000);
     expect(hasEnvironment(3000)).toBe(false);
   });
 
-  it('returns false for unknown port', () => {
-    expect(removeEnvironment(9999)).toBe(false);
+  it("does nothing if port has no environment", () => {
+    expect(() => removeEnvironment(9999)).not.toThrow();
   });
 });
 
-describe('listEnvironments', () => {
-  it('returns rules sorted by port', () => {
-    setEnvironment(8080, 'staging');
-    setEnvironment(3000, 'dev');
+describe("hasEnvironment", () => {
+  it("returns true when environment is set", () => {
+    setEnvironment(5000, "test");
+    expect(hasEnvironment(5000)).toBe(true);
+  });
+
+  it("returns false when no environment is set", () => {
+    expect(hasEnvironment(5001)).toBe(false);
+  });
+});
+
+describe("listEnvironments", () => {
+  it("returns all port-environment mappings", () => {
+    setEnvironment(3000, "development");
+    setEnvironment(4000, "production");
     const list = listEnvironments();
-    expect(list[0].port).toBe(3000);
-    expect(list[1].port).toBe(8080);
+    expect(list).toHaveLength(2);
+    expect(list.find((e) => e.port === 3000)?.env).toBe("development");
+    expect(list.find((e) => e.port === 4000)?.env).toBe("production");
+  });
+
+  it("returns empty array when no environments set", () => {
+    expect(listEnvironments()).toEqual([]);
   });
 });
 
-describe('getPortsForEnvironment', () => {
-  it('returns only matching ports', () => {
-    setEnvironment(3000, 'dev');
-    setEnvironment(3001, 'dev');
-    setEnvironment(8080, 'staging');
-    const devPorts = getPortsForEnvironment('dev');
-    expect(devPorts).toHaveLength(2);
-    expect(devPorts.map(r => r.port)).toContain(3000);
+describe("getPortsForEnvironment", () => {
+  it("returns all ports tagged with a given environment", () => {
+    setEnvironment(3000, "development");
+    setEnvironment(3001, "development");
+    setEnvironment(4000, "production");
+    const devPorts = getPortsForEnvironment("development");
+    expect(devPorts).toContain(3000);
+    expect(devPorts).toContain(3001);
+    expect(devPorts).not.toContain(4000);
   });
 
-  it('is case-insensitive', () => {
-    setEnvironment(3000, 'prod');
-    expect(getPortsForEnvironment('PROD')).toHaveLength(1);
+  it("returns empty array for unknown environment", () => {
+    expect(getPortsForEnvironment("unknown")).toEqual([]);
   });
 });
 
-describe('isKnownEnvironment', () => {
-  it('returns true for known envs', () => {
-    expect(isKnownEnvironment('dev')).toBe(true);
-    expect(isKnownEnvironment('PROD')).toBe(true);
+describe("clearPortEnvironments", () => {
+  it("removes all environments for a specific port", () => {
+    setEnvironment(3000, "development");
+    setEnvironment(4000, "staging");
+    clearPortEnvironments(3000);
+    expect(hasEnvironment(3000)).toBe(false);
+    expect(hasEnvironment(4000)).toBe(true);
   });
+});
 
-  it('returns false for custom envs', () => {
-    expect(isKnownEnvironment('canary')).toBe(false);
+describe("clearEnvironments", () => {
+  it("clears all environment mappings", () => {
+    setEnvironment(3000, "development");
+    setEnvironment(4000, "production");
+    clearEnvironments();
+    expect(listEnvironments()).toEqual([]);
   });
 });
