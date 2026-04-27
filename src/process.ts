@@ -17,8 +17,10 @@ export function getProcessForPort(port: number): ProcessInfo | null {
     if (!lines.length) return null;
     const parts = lines[0].split(/\s+/);
     if (parts.length < 9) return null;
+    const pid = parseInt(parts[1], 10);
+    if (isNaN(pid)) return null;
     return {
-      pid: parseInt(parts[1], 10),
+      pid,
       name: parts[0],
       port,
       protocol: 'TCP',
